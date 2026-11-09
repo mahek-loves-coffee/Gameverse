@@ -1,0 +1,3 @@
+-- SQLite schema is automatically created by server/db.js.
+-- users: username/password hash/avatar profile
+-- game_results: finished round result history
