@@ -19,10 +19,10 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes("/node_modules/")) return;
           if (
-            id.includes("/node_modules/three/") ||
             id.includes("/node_modules/@react-three/") ||
             id.includes("/node_modules/three-stdlib/")
-          ) return "three-vendor";
+          ) return "r3f-vendor";
+          if (id.includes("/node_modules/three/")) return "three-vendor";
           if (
             id.includes("/node_modules/react/") ||
             id.includes("/node_modules/react-dom/") ||
