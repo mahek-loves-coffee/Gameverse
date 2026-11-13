@@ -18,6 +18,10 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install
+      - name: Report dependency vulnerabilities
+        run: |
+          npm audit --json > npm-audit.json || true
+          node -e 'const report=require("./npm-audit.json"); for (const [name, issue] of Object.entries(report.vulnerabilities || {})) console.log(name + ": " + issue.severity + ", direct=" + issue.isDirect + ", fix=" + JSON.stringify(issue.fixAvailable));'
       - name: Run checks and tests
         run: npm run check
       - name: Build frontend
