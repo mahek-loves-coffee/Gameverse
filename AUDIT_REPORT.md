@@ -72,3 +72,47 @@ The automated suite includes game-engine tests and source-level regression tests
 - Browser cookies are separate per device/browser. A phone must sign into Gameverse separately; a PC login is not shared automatically. Open `http://<PC-LAN-IP>:5173/api/health` on the phone; JSON with `ok: true` proves the frontend proxy can reach the backend. `Not secure` is expected for this local `http://` testing address and is not itself a room-creation failure.
 - Live rooms remain in the server's in-memory `Map`; restarting the server closes active rooms. Multi-instance production deployment would require shared room state.
 - Before a public launch, configure a strong `SESSION_SECRET`, HTTPS, secure cookies, a restrictive `CLIENT_ORIGIN`, logging/monitoring, abuse controls, and load/integration tests. This archive is not production certification or a security audit.
+
+
+## Follow-up verification — 2026-11-13
+
+### Changes committed to the repository
+
+- Added GitHub Actions CI for pushes and pull requests on `main`, using Node.js 22.
+- CI runs server syntax checks, the automated test suite, and the Vite production build.
+- Corrected the deployment guide: it now uses the existing `mahek-loves-coffee/Gameverse` repository and the correct order (Vercel frontend first, Render backend second, then connect the two environment variables).
+- Added Vite vendor chunk separation and lazy-loaded the 3D avatar, Avatar Studio, and game board components so the login screen does not eagerly import the 3D engine.
+- Updated Express, React Router, and Vite to patched versions that remove the reported high-severity dependency advisories.
+
+### CI results for the latest dependency update
+
+| Check | Result |
+|---|---|
+| Node.js 22 CI | PASS |
+| `npm run check` | PASS — 104 tests, 0 failures |
+| `npm run build` | PASS |
+| Dependency audit | 2 moderate advisories remain in React Router 6; npm reports the available fix is React Router 7 (major upgrade), so it was not applied without a compatibility review |
+| Largest generated JS chunk | Three.js vendor: 687.54 kB minified / 177.22 kB gzip |
+| Avatar Studio chunk | 10.99 kB |
+| Game board chunk | 18.94 kB |
+| Avatar 3D chunk | 28.18 kB |
+
+The 3D engine remains a large deferred vendor chunk. It is now separated from the login bundle and split into a distinct file, but it still triggers Vite's 500 kB warning when the 3D components are loaded.
+
+### Supabase read-only verification
+
+- The existing `the-gameverse` Supabase project reports `ACTIVE_HEALTHY`.
+- PostgreSQL is version 17.
+- The five expected public tables exist: `users`, `game_results`, `friend_requests`, `friendships`, and `direct_messages`.
+- RLS is enabled on all five tables.
+- A read-only privilege query returned no table grants to `anon`, `authenticated`, or `PUBLIC`. This matches the app's backend-only database access model; the server connects using its private database connection string.
+- Supabase's RLS-without-policy notices are informational in this design because public client roles have no table privileges. Do not add permissive client policies or grants just to silence the linter.
+- Performance advisor notices report five currently unused indexes on the new/empty database. They are not removed because the indexes support expected queries as data grows.
+
+### Still not verified
+
+- Render service deployment and environment variables were not accessible through the connected tools; no claim is made that the backend is live.
+- Vercel deployment URL and `VITE_API_URL` were not accessible through the connected tools; no claim is made that the frontend is live.
+- Two-account live Socket.IO multiplayer, real browser/WebGL rendering, and phone-device behavior still require live environment verification.
+- Room and match state remains in an in-memory `Map`, so a Render restart ends active rooms. Shared persistent room state is still required for resilient production hosting.
+- The dependency audit still has two moderate React Router 6 advisories. A React Router 7 major upgrade requires a separate compatibility pass before adoption.
